@@ -1,18 +1,33 @@
-# Findall to Predicates Converter
+# Findall to Predicates Translator
 
-This repository demonstrates an algorithm to convert nested `findall/3` operations in Prolog into explicit recursive predicates that don't use `findall`.
+This repository provides an **automatic translator** that converts Prolog code using nested `findall/3` operations into equivalent code using explicit recursive predicates.
 
 ## Overview
 
-The transformation converts Prolog code that uses nested `findall/3` operations into explicit recursive predicates that operate on lists. This approach:
+The `translator.pl` program automatically analyzes Prolog predicates with nested `findall/3` calls and generates equivalent code using explicit recursive predicates. The translator:
 
-1. **Extracts base predicates** (e.g., `colour(red)`, `colour(yellow)`) and converts them to list facts (e.g., `colours([red,yellow])`)
-2. **Converts each findall operation** to a numbered recursive predicate (e.g., `findall001`, `findall002`)
-3. **Chains transformations** in the main predicate
+1. **Parses** nested findall structures
+2. **Identifies** base predicates and transformation logic  
+3. **Generates** numbered recursive predicates (e.g., `findall001`, `findall002`)
+4. **Produces** the main predicate that chains all transformations
+
+## Usage
+
+```prolog
+?- consult(translator).
+?- translate('predicate(YYs):-findall([Y2,Y2],(findall(Y1,(colour(Y),Y1=c-Y),Ys),member(Y2,Ys)),YYs).', Output).
+```
+
+Or run the test suite:
+```bash
+swipl -g run_tests -t halt translator.pl
+```
 
 ## Example Transformation
 
-### Original Code (Using Nested Findall)
+The translator automatically converts code like this:
+
+### Input: Original Code (Using Nested Findall)
 
 ```prolog
 % Base facts
@@ -27,13 +42,9 @@ predicate(YYs):-
         YYs).
 ```
 
-**Query:**
-```prolog
-?- predicate(A).
-A = [[c-red, c-red], [c-yellow, c-yellow]].
-```
+### Output: Converted Code (Without Findall)
 
-### Converted Code (Without Findall)
+The translator generates:
 
 ```prolog
 % Base data as a list fact
@@ -59,13 +70,13 @@ findall002([X|Xs],[[X,X]|Ys]):-
     findall002(Xs,Ys).
 ```
 
-**Query:**
+Both versions produce the same result:
 ```prolog
 ?- predicate(A).
 A = [[c-red, c-red], [c-yellow, c-yellow]].
 ```
 
-## The Transformation Algorithm
+## How the Translator Works
 
 ### Step 1: Identify Base Predicates
 
@@ -216,20 +227,11 @@ findall002([X|Xs],[[X,X]|Ys]):-
 3. **Educational Value**: Shows how `findall` can be implemented using basic recursion
 4. **Composability**: Each transformation step is a separate predicate that can be tested independently
 
-## Usage
-
-To run the example:
-
-```bash
-swipl -g test_example -t halt example.pl
-```
-
-This will execute the converted predicate and verify it produces the same result as the original nested findall version.
-
 ## Files
 
-- `example.pl` - Working example demonstrating the transformation
-- `README.md` - This documentation file
+- `translator.pl` - The automatic translator program
+- `README.md` - This documentation
+- `ALGORITHM.md` - Detailed algorithm specification
 
 ## Implementation Notes
 
