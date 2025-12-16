@@ -13,12 +13,18 @@ The `translator.pl` program automatically analyzes Prolog predicates with nested
 
 ## Usage
 
+### Interactive Mode
 ```prolog
 ?- consult(translator).
 ?- translate('predicate(YYs):-findall([Y2,Y2],(findall(Y1,(colour(Y),Y1=c-Y),Ys),member(Y2,Ys)),YYs).', Output).
 ```
 
-Or run the test suite:
+### Run Examples
+```bash
+swipl -g run_examples -t halt example_usage.pl
+```
+
+### Run Test Suite
 ```bash
 swipl -g run_tests -t halt translator.pl
 ```
@@ -230,6 +236,7 @@ findall002([X|Xs],[[X,X]|Ys]):-
 ## Files
 
 - `translator.pl` - The automatic translator program
+- `example_usage.pl` - Examples demonstrating the translator
 - `README.md` - This documentation
 - `ALGORITHM.md` - Detailed algorithm specification
 
