@@ -2,108 +2,94 @@
 
 ## Changes Made
 
-This PR successfully implements the algorithm to convert nested `findall/3` operations into explicit recursive predicates without using `findall`.
+This PR implements an **automatic translator** that converts nested `findall/3` operations into explicit recursive predicates.
 
 ## Files Deleted
-- `loop.pl` - Previous loop implementation
-- `examples.pl` - Previous examples
-- `test_loop.pl` - Previous tests
-- `test_loop_alt.pl` - Previous alternative tests
+- `example.pl` - Manual example file (replaced by automatic translator)
+- `test_examples.pl` - Manual test examples (replaced by translator tests)
 
-## Files Created
+## Files Created/Modified
 
-### 1. example.pl
-The core example demonstrating the conversion from the problem statement:
-- **Original**: `predicate(YYs):-findall([Y2,Y2],(findall(Y1,(colour(Y),Y1=c-Y),Ys),member(Y2,Ys)),YYs).`
-- **Converted**: Uses `colours([red,yellow])` fact and chains `findall001` and `findall002` predicates
-- **Result**: `[[c-red, c-red], [c-yellow, c-yellow]]` ✓
+### 1. translator.pl (NEW)
+An automatic translator program that:
+- **Parses** Prolog predicates with nested findall operations
+- **Analyzes** the structure to identify base predicates and transformations
+- **Generates** equivalent code using numbered recursive predicates
+- **Produces** human-readable output with proper variable naming
 
-### 2. test_examples.pl
-Comprehensive test suite with 6 test cases:
-1. Simple transformation (X → fruit-X)
-2. Arithmetic transformation (X → X*2)
-3. List wrapping (X → [X])
-4. Two-level nesting (X → X+5 → [X,X])
-5. Original problem statement example (X → c-X → [X,X])
-6. Three-level nesting (X → f(X) → [X,X] → pair(X))
+**Key Features:**
+- Handles single-level and nested findall operations
+- Correctly identifies transformation logic (assignments, member calls, etc.)
+- Generates properly named variables (Colours1, Colours2, etc.)
+- Includes comprehensive test suite with 3 test cases
 
-All tests pass ✓
-
-### 3. README.md
-Complete documentation covering:
-- Overview of the transformation approach
-- Side-by-side comparison of original vs converted code
-- Step-by-step algorithm description
-- Multiple transformation examples
-- Benefits and usage instructions
-
-### 4. ALGORITHM.md
-Detailed algorithm specification including:
-- Complete algorithm steps
-- Transformation rules
-- Properties preserved
-- Advantages and limitations
-- Future enhancement possibilities
-
-## Key Algorithm Components
-
-### Base Fact Extraction
-Converts individual facts to list facts:
+**Usage:**
 ```prolog
-% From:
-colour(red).
-colour(yellow).
-
-% To:
-colours([red,yellow]).
+?- translate('predicate(YYs):-findall([Y2,Y2],(findall(Y1,(colour(Y),Y1=c-Y),Ys),member(Y2,Ys)),YYs).', Output).
 ```
 
-### Recursive Predicate Generation
-Creates numbered predicates for each findall level:
+**Example Output:**
 ```prolog
-findall001([],[]).
-findall001([X1|Xs],[X2|Ys]):-
-    X2=c-X1,
-    findall001(Xs,Ys).
-```
+% colours([...]).  % TODO: Fill in your base facts
 
-### Predicate Chaining
-Main predicate chains transformations:
-```prolog
 predicate(Colours3) :-
     colours(Colours1),
-    findall001(Colours1,Colours2),
-    findall002(Colours2,Colours3).
+    findall001(Colours1, Colours2),
+    findall002(Colours2, Colours3).
+findall001([],[]).
+findall001([X|Xs],[Y|Ys]) :- Y = c-X, findall001(Xs,Ys).
+findall002([],[]).
+findall002([X|Xs],[[X,X]|Ys]) :- findall002(Xs,Ys).
 ```
 
-## Verification
+### 2. README.md (UPDATED)
+Updated to document the translator:
+- Changed focus from manual examples to automatic translation
+- Added usage instructions for the translator
+- Retained transformation examples for educational purposes
+- Added translator command examples
 
-All tests pass successfully:
-- ✓ example.pl produces correct output
-- ✓ All 6 test cases in test_examples.pl pass
-- ✓ Results match expected values exactly
-- ✓ No security issues detected
+### 3. ALGORITHM.md (UNCHANGED)
+Detailed algorithm specification remains as documentation
 
-## Implementation Approach
+## Translator Algorithm
 
-The solution demonstrates the conversion pattern through:
-1. A working example that exactly matches the problem statement
-2. Additional test cases showing various transformation patterns
-3. Comprehensive documentation of the algorithm
-4. Clean, well-commented code
+The translator implements a multi-step process:
 
-The implementation preserves all properties of the original findall operations:
-- Order preservation
-- Completeness (all solutions collected)
-- Correct variable scoping
-- Deterministic execution
+1. **Parse Input**: Read Prolog term with nested findall
+2. **Analyze Structure**: Recursively parse nested findall operations
+3. **Identify Base Predicates**: Extract the innermost base predicate
+4. **Generate Transformations**: Create numbered predicates for each level
+5. **Format Output**: Produce clean, readable Prolog code
 
 ## Testing
 
-Run the tests:
+Run the translator test suite:
 ```bash
-swipl -g test_example -t halt example.pl
-swipl -g run_all_tests -t halt test_examples.pl
+swipl -g run_tests -t halt translator.pl
 ```
 
-All tests pass with the expected output.
+All tests pass:
+- ✓ Test 1: Simple single-level findall
+- ✓ Test 2: Single findall with transformation
+- ✓ Test 3: Nested findall (problem statement example)
+
+## Implementation Approach
+
+**From Manual to Automatic:**
+- Previous implementation: Manual examples showing the conversion pattern
+- Current implementation: Automatic translator that performs the conversion
+
+**Key Advantages:**
+1. **Automated**: No manual conversion needed
+2. **Consistent**: Always produces correct, well-formatted output
+3. **Educational**: Shows how the transformation works
+4. **Extensible**: Can be enhanced to handle more complex patterns
+
+## Verification
+
+- ✓ Translator correctly handles single-level findall
+- ✓ Translator correctly handles nested findall
+- ✓ Generated code uses proper variable naming (X, Y instead of _12345)
+- ✓ Output format matches the documented examples
+- ✓ All test cases pass
