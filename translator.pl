@@ -187,34 +187,6 @@ generate_outer_recursive_clause(PredName, Template, Clause) :-
            [PredName, TemplateStr, PredName]).
 
 /*
- * extract_expression_pattern(+Expr, +OldVar, -Pattern)
- * Extracts the pattern from an expression, substituting variables
- */
-extract_expression_pattern(Expr, OldVar, Pattern) :-
-    (   Expr = ('-'(A, B))
-    ->  (   B == OldVar
-        ->  format(atom(Pattern), '~w-X', [A])
-        ;   A == OldVar
-        ->  format(atom(Pattern), 'X-~w', [B])
-        ;   Pattern = Expr
-        )
-    ;   Expr =.. [Functor|Args],
-        substitute_var_in_args(Args, OldVar, NewArgs),
-        (   NewArgs = [SingleArg]
-        ->  format(atom(Pattern), '~w(~w)', [Functor, SingleArg])
-        ;   Pattern =.. [Functor|NewArgs]
-        )
-    ).
-
-substitute_var_in_args([], _, []).
-substitute_var_in_args([Arg|Rest], OldVar, ['X'|NewRest]) :-
-    Arg == OldVar,
-    !,
-    substitute_var_in_args(Rest, OldVar, NewRest).
-substitute_var_in_args([Arg|Rest], OldVar, [Arg|NewRest]) :-
-    substitute_var_in_args(Rest, OldVar, NewRest).
-
-/*
  * format_template(+Template, -TemplateStr)
  * Formats a template for output
  */
