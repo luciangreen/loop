@@ -1,81 +1,244 @@
-# loop
+# Findall to Predicates Converter
 
-Converts Prolog `findall/3` to a loop with predicates.
+This repository demonstrates an algorithm to convert nested `findall/3` operations in Prolog into explicit recursive predicates that don't use `findall`.
 
 ## Overview
 
-This module provides an alternative implementation to Prolog's built-in `findall/3` predicate using explicit loop predicates with backtracking. The `loop/3` predicate is functionally equivalent to `findall/3` but demonstrates how findall operations can be implemented using failure-driven loops and predicate iteration.
+The transformation converts Prolog code that uses nested `findall/3` operations into explicit recursive predicates that operate on lists. This approach:
 
-## Installation
+1. **Extracts base predicates** (e.g., `colour(red)`, `colour(yellow)`) and converts them to list facts (e.g., `colours([red,yellow])`)
+2. **Converts each findall operation** to a numbered recursive predicate (e.g., `findall001`, `findall002`)
+3. **Chains transformations** in the main predicate
 
-Load the module in your Prolog program:
+## Example Transformation
+
+### Original Code (Using Nested Findall)
 
 ```prolog
-:- use_module(loop).
+% Base facts
+colour(red).
+colour(yellow).
+
+% Predicate with nested findall
+predicate(YYs):-
+    findall([Y2,Y2],
+        (findall(Y1,(colour(Y),Y1=c-Y),Ys),
+         member(Y2,Ys)),
+        YYs).
 ```
+
+**Query:**
+```prolog
+?- predicate(A).
+A = [[c-red, c-red], [c-yellow, c-yellow]].
+```
+
+### Converted Code (Without Findall)
+
+```prolog
+% Base data as a list fact
+colours([red,yellow]).
+
+% Main predicate - chains the transformation predicates
+predicate(Colours3) :-
+    colours(Colours1),
+    findall001(Colours1,Colours2),
+    findall002(Colours2,Colours3).
+
+% First transformation: converts each colour X to c-X
+% Replaces: findall(Y1,(colour(Y),Y1=c-Y),Ys)
+findall001([],[]).
+findall001([X1|Xs],[X2|Ys]):-
+    X2=c-X1,
+    findall001(Xs,Ys).
+
+% Second transformation: duplicates each element into a list [X,X]
+% Replaces: findall([Y2,Y2],(member(Y2,Ys)),YYs)
+findall002([],[]).
+findall002([X|Xs],[[X,X]|Ys]):-
+    findall002(Xs,Ys).
+```
+
+**Query:**
+```prolog
+?- predicate(A).
+A = [[c-red, c-red], [c-yellow, c-yellow]].
+```
+
+## The Transformation Algorithm
+
+### Step 1: Identify Base Predicates
+
+Scan the innermost `findall` operation to find base predicates that generate data:
+- Example: `colour(Y)` in `findall(Y1,(colour(Y),Y1=c-Y),Ys)`
+
+### Step 2: Convert Base Predicates to Lists
+
+Collect all instances of the base predicate and create a list fact:
+- From: `colour(red). colour(yellow).`
+- To: `colours([red,yellow]).`
+
+The plural form is created by appending 's' to the predicate name.
+
+### Step 3: Analyze Each Findall Level
+
+For each `findall(Template, Goal, Result)` operation from innermost to outermost:
+
+1. **Extract the transformation logic** from the Goal
+2. **Identify the template pattern** that determines the output format
+3. **Create a numbered predicate** (`findall001`, `findall002`, etc.)
+
+### Step 4: Generate Recursive Predicates
+
+For each findall level, generate two clauses:
+
+**Base case:**
+```prolog
+findallXXX([],[]).
+```
+
+**Recursive case:**
+```prolog
+findallXXX([InputHead|InputTail],[OutputHead|OutputTail]):-
+    % Transformation logic here
+    OutputHead = <transformation of InputHead>,
+    findallXXX(InputTail,OutputTail).
+```
+
+The transformation logic depends on the original `findall` Goal:
+- If Goal contains `X=Expr`, create `OutputHead=Expr` with substitution
+- If Goal is just `member(X,List)`, create `OutputHead=Template` with substitution
+
+### Step 5: Chain Transformations
+
+Create the main predicate that:
+1. Calls the base list fact
+2. Chains all numbered predicates in sequence
+3. Returns the final result
+
+```prolog
+predicate(FinalResult) :-
+    base_list_fact(Var1),
+    findall001(Var1,Var2),
+    findall002(Var2,Var3),
+    ...
+    findallNNN(VarN,FinalResult).
+```
+
+## Transformation Examples
+
+### Example 1: Simple Transformation
+
+**Original:**
+```prolog
+colour(red).
+colour(yellow).
+simple(Result) :- findall(c-Y, colour(Y), Result).
+```
+
+**Converted:**
+```prolog
+colours([red,yellow]).
+
+simple(Result) :-
+    colours(Colours1),
+    findall001(Colours1, Result).
+
+findall001([],[]).
+findall001([X|Xs],[c-X|Ys]) :-
+    findall001(Xs,Ys).
+```
+
+### Example 2: Template Duplication
+
+**Original:**
+```prolog
+items([a,b,c]).
+duplicate(Result) :- items(Xs), findall([X,X], member(X,Xs), Result).
+```
+
+**Converted:**
+```prolog
+items([a,b,c]).
+
+duplicate(Result) :-
+    items(Items1),
+    findall001(Items1, Result).
+
+findall001([],[]).
+findall001([X|Xs],[[X,X]|Ys]) :-
+    findall001(Xs,Ys).
+```
+
+### Example 3: Nested Findalls (From Problem Statement)
+
+**Original:**
+```prolog
+colour(red).
+colour(yellow).
+
+predicate(YYs):-
+    findall([Y2,Y2],
+        (findall(Y1,(colour(Y),Y1=c-Y),Ys),
+         member(Y2,Ys)),
+        YYs).
+```
+
+**Analysis:**
+- Inner findall: transforms each `colour(Y)` to `c-Y`
+- Outer findall: duplicates each element into `[X,X]` format
+
+**Converted:**
+```prolog
+colours([red,yellow]).
+
+predicate(Colours3) :-
+    colours(Colours1),
+    findall001(Colours1,Colours2),
+    findall002(Colours2,Colours3).
+
+% Inner transformation: Y1 = c-Y
+findall001([],[]).
+findall001([X1|Xs],[X2|Ys]):-
+    X2=c-X1,
+    findall001(Xs,Ys).
+
+% Outer transformation: [Y2,Y2]
+findall002([],[]).
+findall002([X|Xs],[[X,X]|Ys]):-
+    findall002(Xs,Ys).
+```
+
+## Benefits of This Approach
+
+1. **Explicit Control Flow**: The recursive predicates make the iteration explicit
+2. **No Side Effects**: Unlike `findall/3` which uses internal state, these predicates are purely functional
+3. **Educational Value**: Shows how `findall` can be implemented using basic recursion
+4. **Composability**: Each transformation step is a separate predicate that can be tested independently
 
 ## Usage
 
-The main predicate is `loop/3`:
-
-```prolog
-loop(+Template, +Goal, -List)
-```
-
-- **Template**: The term to collect for each solution
-- **Goal**: The goal to prove
-- **List**: The resulting list of collected solutions
-
-### Basic Examples
-
-```prolog
-% Collect all elements from a list
-?- loop(X, member(X, [1,2,3]), List).
-List = [1, 2, 3].
-
-% Filter with conditions
-?- loop(X, (member(X, [1,2,3,4,5,6]), X mod 2 =:= 0), List).
-List = [2, 4, 6].
-
-% Arithmetic transformations
-?- loop(Y, (member(X, [1,2,3,4]), Y is X * X), List).
-List = [1, 4, 9, 16].
-
-% Cartesian product
-?- loop(X-Y, (member(X, [a,b]), member(Y, [1,2])), List).
-List = [a-1, a-2, b-1, b-2].
-```
-
-## Implementation Details
-
-The `loop/3` predicate uses:
-1. A failure-driven loop to iterate through all solutions via backtracking
-2. Dynamic predicates to temporarily store solutions
-3. A unique key (gensym) to isolate different collections
-4. Retrieval predicates to collect stored solutions into a list
-
-This demonstrates how `findall/3`-style collection can be implemented using explicit loop constructs rather than relying on the built-in predicate.
-
-## Testing
-
-Run the test suite:
+To run the example:
 
 ```bash
-swipl -g run_all_tests -t halt test_loop.pl
+swipl -g test_example -t halt example.pl
 ```
 
-Run the examples:
-
-```bash
-swipl -g run_all_examples -t halt examples.pl
-```
+This will execute the converted predicate and verify it produces the same result as the original nested findall version.
 
 ## Files
 
-- `loop.pl` - Main module with `loop/3` implementation
-- `test_loop.pl` - Test suite
-- `examples.pl` - Usage examples
-- `README.md` - This file
+- `example.pl` - Working example demonstrating the transformation
+- `README.md` - This documentation file
+
+## Implementation Notes
+
+The transformation preserves the semantics of the original `findall` operations:
+- **Order preservation**: Elements are processed in the same order
+- **Completeness**: All solutions are collected
+- **Variable scoping**: Each transformation level operates on the output of the previous level
+
+The numbered predicates (`findall001`, `findall002`, etc.) are named to clearly indicate the transformation sequence and can be traced for debugging.
 
 ## License
 
