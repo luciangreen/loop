@@ -15,7 +15,7 @@
  *   List = [1, 2, 3].
  */
 
-:- module(loop, [loop/3]).
+:- module(loop, [loop/3, loop_alt/3]).
 
 /**
  * loop(+Template, +Goal, -List)
@@ -108,13 +108,21 @@ loop_alt(Template, Goal, List) :-
 % Helper for assert-based collection
 assert_solutions(Key, Template, Goal) :-
     call(Goal),
-    assertz(loop_solution(Key, Template)),
+    copy_term(Template, Copy),
+    assertz(loop_solution(Key, Copy)),
     fail.
 assert_solutions(_, _, _).
 
 % Collect all solutions with given key
 collect_solutions(Key, List) :-
-    findall(Solution, loop_solution(Key, Solution), List).
+    collect_solutions_acc(Key, [], List).
+
+% Helper to collect solutions using accumulator
+collect_solutions_acc(Key, Acc, List) :-
+    (   retract(loop_solution(Key, Solution))
+    ->  collect_solutions_acc(Key, [Solution|Acc], List)
+    ;   reverse(Acc, List)
+    ).
 
 % Clean up asserted solutions
 cleanup_solutions(Key) :-
