@@ -38,7 +38,7 @@ The translator automatically converts code like this:
 ```prolog
 % Base facts
 colour(red).
-colour(yellow).
+colour(blue).
 
 % Predicate with nested findall
 predicate(YYs):-
@@ -54,7 +54,7 @@ The translator generates:
 
 ```prolog
 % Base data as a list fact
-colours([red,yellow]).
+colours([red,blue]).
 
 % Main predicate - chains the transformation predicates
 predicate(Colours3) :-
@@ -79,7 +79,7 @@ findall002([X|Xs],[[X,X]|Ys]):-
 Both versions produce the same result:
 ```prolog
 ?- predicate(A).
-A = [[c-red, c-red], [c-yellow, c-yellow]].
+A = [[c-red, c-red], [c-blue, c-blue]].
 ```
 
 ## How the Translator Works
@@ -92,8 +92,8 @@ Scan the innermost `findall` operation to find base predicates that generate dat
 ### Step 2: Convert Base Predicates to Lists
 
 Collect all instances of the base predicate and create a list fact:
-- From: `colour(red). colour(yellow).`
-- To: `colours([red,yellow]).`
+- From: `colour(red). colour(blue).`
+- To: `colours([red,blue]).`
 
 The plural form is created by appending 's' to the predicate name.
 
@@ -149,13 +149,13 @@ predicate(FinalResult) :-
 **Original:**
 ```prolog
 colour(red).
-colour(yellow).
+colour(blue).
 simple(Result) :- findall(c-Y, colour(Y), Result).
 ```
 
 **Converted:**
 ```prolog
-colours([red,yellow]).
+colours([red,blue]).
 
 simple(Result) :-
     colours(Colours1),
@@ -192,7 +192,7 @@ findall001([X|Xs],[[X,X]|Ys]) :-
 **Original:**
 ```prolog
 colour(red).
-colour(yellow).
+colour(blue).
 
 predicate(YYs):-
     findall([Y2,Y2],
@@ -207,7 +207,7 @@ predicate(YYs):-
 
 **Converted:**
 ```prolog
-colours([red,yellow]).
+colours([red,blue]).
 
 predicate(Colours3) :-
     colours(Colours1),
