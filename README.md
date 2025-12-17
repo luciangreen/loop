@@ -6,10 +6,11 @@ This repository provides an **automatic translator** that converts Prolog code u
 
 The `translator.pl` program automatically analyzes Prolog predicates with nested `findall/3` calls and generates equivalent code using explicit recursive predicates. The translator:
 
-1. **Parses** nested findall structures
+1. **Parses** nested findall structures of **any depth** (tested up to 4+ levels)
 2. **Identifies** base predicates and transformation logic  
 3. **Generates** numbered recursive predicates (e.g., `findall001`, `findall002`)
 4. **Produces** the main predicate that chains all transformations
+5. **Supports** multiple findalls per level and code before/after/between findalls
 
 ## Usage
 
@@ -232,11 +233,49 @@ findall002([X|Xs],[[X,X]|Ys]):-
 2. **No Side Effects**: Unlike `findall/3` which uses internal state, these predicates are purely functional
 3. **Educational Value**: Shows how `findall` can be implemented using basic recursion
 4. **Composability**: Each transformation step is a separate predicate that can be tested independently
+5. **Unlimited Nesting**: Handles any level of nested findalls, not limited to 2-3 levels
+
+## Features
+
+### Supported Patterns
+
+✅ **Any level of nesting** (tested up to 4+ levels, theoretically unlimited)
+```prolog
+% 3-level nesting example:
+findall([Z,Z], 
+  (findall([Y,Y], 
+    (findall(X, base(X), Xs), member(Y, Xs)), Ys), 
+   member(Z, Ys)), R)
+```
+
+✅ **Multiple findalls per level**
+```prolog
+% Multiple independent findalls:
+findall(X, base1(X), R1), findall(Y, base2(Y), R2)
+```
+
+✅ **Code before, after, or between findalls**
+```prolog
+% Code before:
+init_data(D), findall(X, member(X, D), R)
+
+% Code after:
+findall(X, base(X), R), process(R)
+
+% Code between:
+findall(X, base1(X), R1), transform(R1, T), findall(Y, member(Y, T), R2)
+```
+
+✅ **Various transformation patterns**
+- Simple pass-through: `findall(X, base(X), R)`
+- With assignment: `findall(Y, (base(X), Y = f(X)), R)`
+- Member iteration: `findall([X,X], member(X, List), R)`
 
 ## Files
 
 - `translator.pl` - The automatic translator program
 - `example_usage.pl` - Examples demonstrating the translator
+- `test_comprehensive.pl` - Comprehensive test suite
 - `README.md` - This documentation
 - `ALGORITHM.md` - Detailed algorithm specification
 
