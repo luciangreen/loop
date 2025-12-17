@@ -34,10 +34,10 @@ Collect all instances of the base predicate and convert to a list fact:
 ```prolog
 % From:
 colour(red).
-colour(yellow).
+colour(blue).
 
 % To:
-colours([red, yellow]).
+colours([red, blue]).
 ```
 
 **Naming convention:** Append 's' to make the predicate name plural.
@@ -50,7 +50,7 @@ For each findall from innermost to outermost:
 ```prolog
 findall(Y1, (colour(Y), Y1=c-Y), Ys)
 ```
-- **Input source:** Base list `colours([red, yellow])`
+- **Input source:** Base list `colours([red, blue])`
 - **Template:** `Y1` 
 - **Transformation:** `Y1=c-Y` means "prepend c- to each element"
 - **Output:** List of transformed elements
@@ -162,7 +162,7 @@ findallN([X|Xs],[f(X,g(X))|Ys]) :-
 ### Input:
 ```prolog
 colour(red).
-colour(yellow).
+colour(blue).
 
 predicate(YYs):-
     findall([Y2,Y2],
@@ -175,7 +175,7 @@ predicate(YYs):-
 
 **Step 1:** Identify base predicate `colour(Y)`, convert to list:
 ```prolog
-colours([red, yellow]).
+colours([red, blue]).
 ```
 
 **Step 2:** Analyze innermost findall:
@@ -215,7 +215,7 @@ predicate(Colours3) :-
 ### Output:
 ```prolog
 ?- predicate(A).
-A = [[c-red, c-red], [c-yellow, c-yellow]].
+A = [[c-red, c-red], [c-blue, c-blue]].
 ```
 
 ## Properties Preserved
