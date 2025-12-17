@@ -274,6 +274,8 @@ generate_outer_recursive_clause(PredName, Template, Clause) :-
  * Formats a template for output
  */
 format_template([A,B], TemplateStr) :-
+    % Use == for exact term identity - we want to check if both are the same variable
+    % This correctly handles templates like [Y2,Y2] where both refer to the same var
     A == B,
     !,
     TemplateStr = '[X,X]'.
@@ -397,8 +399,7 @@ generate_main_predicate_complex(PredName, Args, FindallStructures, OtherGoals, L
     % Format the predicate
     (   Args = [SingleArg]
     ->  format(atom(HeadStr), '~w(~w)', [PredName, SingleArg])
-    ;   maplist(term_to_atom, Args, ArgStrs),
-        atomics_to_string(ArgStrs, ', ', ArgsStr),
+    ;   format_args(Args, ArgsStr),
         format(atom(HeadStr), '~w(~w)', [PredName, ArgsStr])
     ),
     
@@ -410,6 +411,17 @@ generate_main_predicate_complex(PredName, Args, FindallStructures, OtherGoals, L
 
 format_goal_call(Goal, CallStr) :-
     format(atom(CallStr), '    ~w', [Goal]).
+
+/*
+ * format_args(+Args, -ArgsStr)
+ * Formats a list of arguments as a comma-separated string
+ */
+format_args(Args, ArgsStr) :-
+    maplist(format_single_arg, Args, ArgStrs),
+    atomics_to_string(ArgStrs, ', ', ArgsStr).
+
+format_single_arg(Arg, ArgStr) :-
+    format(atom(ArgStr), '~w', [Arg]).
 
 /*
  * generate_all_chains(+FindallStructures, +StartN, -ChainCalls)
@@ -425,8 +437,12 @@ generate_all_chains([Structure|Rest], StartN, AllCalls) :-
 
 generate_chain_for_structure(Structure, StartN, NumLevels, Calls) :-
     get_base_predicate_name(Structure, BaseName),
-    atom_concat(BaseName, 's', PluralName),
-    capitalize_atom(PluralName, CapBase),
+    (   BaseName = none
+    ->  % No base predicate - use generic variable names
+        CapBase = 'Var'
+    ;   atom_concat(BaseName, 's', PluralName),
+        capitalize_atom(PluralName, CapBase)
+    ),
     
     % Generate variable sequence
     EndN is StartN + NumLevels,
